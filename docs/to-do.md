@@ -1,16 +1,18 @@
 # Implementation Plan
 + plan architecture;
 - drf:
-    - set up project:
-        - venv, dependencies & django initialization;
-        - .env file config -> loading & validation;
+    + set up project:
+        + venv, dependencies & django initialization;
+        + .env file config -> loading & validation;
     - set up orm schemas & db migrations:
-        - user (id, name, registered_at, status (pending_activation, active, disabled));
+        - user:
+            - override default auth user;
+            - fields (use exact or similar AbstractUser fields where possible): id, name, email, email_verified (bool, false until email is verified);
         - user_activation_tokens (id, user_id, token, expires_at);
     - set up route handlers without celery:
         - user registration (validate -> add a user to the database -> register a task on commit (later, when celery is added));
         - get an existing user;
-        - activate user account (get token from URL -> check if it exists -> change status of a corresponding user);
+        - activate user account (get token from URL -> check if it exists -> change email_verified of a corresponding user);
     - add dockerfile for drf;
     - add docker-compose.yml:
         - drf;
@@ -50,7 +52,7 @@
                 - idempotency;
                 - failure & retry:
                     - operational errors (broker or DB down);
-                    - application errors (user already activated, ???)
+                    ? application errors (figure out edge cases)
                     ? monkeypatch task or a function called inside it to simulate failures
 
 - add a script / functions for setting up dev environment (running migrations, etc.);
@@ -60,6 +62,7 @@
 # Key Architecture Decisions
 - Token-based idempotency over django-celery-results for task outcome tracking;
 - Separate `user_activation_tokens` table — non-user data and token lifecycle are independent;
+- database transactions for multistep operations, where applicable;
 - `transaction.on_commit()` for task dispatch — avoids worker racing the DB commit;
 - `acks_late=True` for at-least-once delivery — worker crash causes redelivery, idempotency handles duplicates;
 - 2-tier error taxonomy: operational errors (broker/DB down → retry) / application errors (invalid state → fail);

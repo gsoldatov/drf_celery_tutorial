@@ -1,1 +1,7 @@
+# General
+.env
 .qwen/
+
+# Python
+venv/
+__pycache__/
