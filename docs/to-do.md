@@ -4,30 +4,33 @@
     + set up project:
         + venv, dependencies & django initialization;
         + .env file config -> loading & validation;
-    - set up orm schemas & db migrations:
-        - user:
-            - override default auth user;
-            - fields (use exact or similar AbstractUser fields where possible): id, name, email, email_verified (bool, false until email is verified);
-        - user_activation_tokens (id, user_id, token, expires_at);
-    - set up route handlers without celery:
-        - user registration (validate -> add a user to the database -> register a task on commit (later, when celery is added));
-        - get an existing user;
-        - activate user account (get token from URL -> check if it exists -> change email_verified of a corresponding user);
-    - add dockerfile for drf;
-    - add docker-compose.yml:
-        - drf;
-        - postgresql;
+    + set up orm schemas & db migrations:
+        + user:
+            + override default auth user;
+            + fields (use exact or similar AbstractUser fields where possible): id, first_name, last_name, email, email_verified (bool, false until email is verified);
+        + user_activation_tokens (id, user_id, token, expires_at);
+    + set up route handlers without celery:
+        + user registration (validate -> add a user to the database -> register a task on commit (later, when celery is added));
+        + get an existing user;
+        + activate user account (get token from URL -> check if it exists -> change email_verified of a corresponding user);
+    + add docker-compose.yml:
+        x drf;          // opted to run dev server & tests locally
+        + postgresql;
     - add tests:
         - use pytest;
         - fixtures:
             - project config, updated with test configuration;
-            - test db setup & teardown;
+            - test db setup & teardown; // once per test file
+            - test db cleanup;  // truncate after each test
             - test client;
             ? other;
         - test cases:
-            - config parsing;
-            - db migrations;
-            - endpoints;
+            - migrations;
+            - views;    // add a Celery task stub in view, but make it mockable for isolated testing of views
+    
+    ? validate .env file, when loading:
+        - add validation tests;
+    ? add admin user to config;
 
 - configure celery:
     - add celery & rabbitmq to docker-compose.yml;
@@ -38,7 +41,7 @@
         - configure task retries;
         - configure at least once delivery;
 
-    - add a worker to docker-compose.yml;
+    ? add a worker to docker-compose.yml;
 
     - add integration tests for celery tasks:
         - update fixtures:
@@ -60,19 +63,35 @@
 
 
 # Key Architecture Decisions
-- Token-based idempotency over django-celery-results for task outcome tracking;
-- Separate `user_activation_tokens` table — non-user data and token lifecycle are independent;
-- database transactions for multistep operations, where applicable;
-- `transaction.on_commit()` for task dispatch — avoids worker racing the DB commit;
-- `acks_late=True` for at-least-once delivery — worker crash causes redelivery, idempotency handles duplicates;
-- 2-tier error taxonomy: operational errors (broker/DB down → retry) / application errors (invalid state → fail);
+## App & Celery General
+- views with multiple database operations should wrap them in a single transaction;
+- no auth restrictions for views;
+- Celery tasks are dispatched via `transaction.on_commit()`;
+
+## Celery Cases
+### Email "Sending" Task
+    - working with an override of auth.user model;
+    - `user_activation_tokens` table stored email validation tokens;
+    - not using django-celery-results, since it's redundant for this case;
+    - `acks_late=True` for at-least-once delivery — worker crash causes redelivery, idempotency handles duplicates;
+    - 2-tier error taxonomy: operational errors (broker/DB down → retry) / application errors (invalid state → fail);
+
+## Development & Testing
 - Single `docker-compose.yml` for dev and test — test isolation via hash-suffixed DB and queue names;
 - pytest with integration tests against real RabbitMQ — no eager-mode shortcuts;
-- No authentication — API is open;
+
+
+
+
+
+
+
+
 
 # Additional Ideas for Tutorial
+- Celery Beat for periodic task execution:
+    - delete expired activation tokens;
 - Task result tracking with django-celery-results and a task status polling endpoint:
     ? other use cases, which rely on DCR's table (restarting failed tasks, storing idempotency keys, ???);
-- Celery Beat for periodic task execution;
 - Canvas primitives: chain, group, chord for task workflows;
 - Task priority queues;

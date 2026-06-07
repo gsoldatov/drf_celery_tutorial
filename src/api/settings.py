@@ -12,8 +12,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
-from urllib.parse import urlparse
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -79,30 +77,17 @@ WSGI_APPLICATION = 'api.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-# TODO: switch to PostgreSQL when docker-compose is added
 
-_db_url = urlparse(os.environ["DATABASE_URL"])
-
-if _db_url.scheme == "sqlite":
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": _db_url.path.lstrip("/") or str(BASE_DIR / "db.sqlite3"),
-        }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ["POSTGRES_DB"],
+        "USER": os.environ["POSTGRES_USER"],
+        "PASSWORD": os.environ["POSTGRES_PASSWORD"],
+        "HOST": os.environ["POSTGRES_HOST"],
+        "PORT": os.environ["POSTGRES_PORT"],
     }
-elif _db_url.scheme == "postgres":
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": _db_url.path.lstrip("/"),
-            "USER": _db_url.username or "",
-            "PASSWORD": _db_url.password or "",
-            "HOST": _db_url.hostname or "localhost",
-            "PORT": _db_url.port or 5432,
-        }
-    }
-else:
-    raise ValueError(f"Unsupported database scheme: {_db_url.scheme}")
+}
 
 
 # Password validation
