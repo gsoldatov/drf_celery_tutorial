@@ -16,21 +16,21 @@
     + add docker-compose.yml:
         x drf;          // opted to run dev server & tests locally
         + postgresql;
-    - add tests:
-        - use pytest;
-        - fixtures:
-            - project config, updated with test configuration;
-            - test db setup & teardown; // once per test file
-            - test db cleanup;  // truncate after each test
-            - test client;
-            ? other;
-        - test cases:
-            - migrations;
-            - views;    // add a Celery task stub in view, but make it mockable for isolated testing of views
+    + add tests:
+        + use pytest;
+        + fixtures:
+            x test db setup & teardown; // once per test file       // using standard pytest-django db instead
+            x test db cleanup;  // truncate after each test
+            + test client;
+        + test cases:
+            + migrations;
+            + serializers (validation);
+            + views:
+                + add a Celery task stub in view, but make it mockable for isolated testing of views;
     
-    ? validate .env file, when loading:
-        - add validation tests;
-    ? add admin user to config;
+    + validate .env file, when loading:
+        + add validation tests;
+    - rename artifacts related to email_verified field to match its name;
 
 - configure celery:
     - add celery & rabbitmq to docker-compose.yml;
@@ -58,7 +58,9 @@
                     ? application errors (figure out edge cases)
                     ? monkeypatch task or a function called inside it to simulate failures
 
-- add a script / functions for setting up dev environment (running migrations, etc.);
+- add admin user & test the full setup manually;
+? add admin user to config;
+? add a script / functions for setting up dev environment (running migrations, etc.);
 - add readme;
 
 
