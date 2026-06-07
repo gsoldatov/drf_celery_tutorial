@@ -3,10 +3,10 @@ from datetime import timedelta
 import pytest
 from django.urls import reverse
 from django.utils import timezone
-from users.models import User, UserActivationToken
+from users.models import User, EmailVerificationToken
 
 REGISTER_URL = reverse("user-registration")
-ACTIVATE_URL = reverse("user-activate")
+ACTIVATE_URL = reverse("user-verify-email")
 
 
 def _detail_url(pk):
@@ -16,7 +16,7 @@ def _detail_url(pk):
 @pytest.mark.django_db(transaction=True)
 class TestUserRegistrationView:
     def test_successful_registration(self, api_client, mocker):
-        mock_delay = mocker.patch("users.tasks.send_activation_email.delay")
+        mock_delay = mocker.patch("users.tasks.send_verification_email.delay")
         payload = {
             "email": "new@example.com",
             "password": "secret123",
@@ -31,7 +31,7 @@ class TestUserRegistrationView:
         user = User.objects.get(email="new@example.com")
         assert user.email_verified is False
         assert user.check_password("secret123")
-        assert UserActivationToken.objects.filter(user=user).exists()
+        assert EmailVerificationToken.objects.filter(user=user).exists()
         mock_delay.assert_called_once_with(user.id)
 
     def test_password_mismatch(self, api_client):
@@ -72,7 +72,7 @@ class TestUserRegistrationView:
         assert "email" in response.data
 
     def test_task_not_called_on_failure(self, api_client, create_user, mocker):
-        mock_delay = mocker.patch("users.tasks.send_activation_email.delay")
+        mock_delay = mocker.patch("users.tasks.send_verification_email.delay")
         create_user(email="taken@example.com")
         payload = {
             "email": "taken@example.com",
@@ -108,10 +108,10 @@ class TestUserDetailView:
 
 
 @pytest.mark.django_db
-class TestUserActivationView:
+class TestEmailVerificationView:
     def test_valid_token(self, api_client, create_user):
         user = create_user(email_verified=False)
-        token = UserActivationToken.objects.create(
+        token = EmailVerificationToken.objects.create(
             user=user,
             expires_at=timezone.now() + timedelta(seconds=300),
         )
@@ -138,7 +138,7 @@ class TestUserActivationView:
 
     def test_expired_token_unverified_user(self, api_client, create_user):
         user = create_user(email_verified=False)
-        token = UserActivationToken.objects.create(
+        token = EmailVerificationToken.objects.create(
             user=user,
             expires_at=timezone.now() - timedelta(seconds=1),
         )
@@ -151,7 +151,7 @@ class TestUserActivationView:
 
     def test_expired_token_already_verified(self, api_client, create_user):
         user = create_user(email_verified=True)
-        token = UserActivationToken.objects.create(
+        token = EmailVerificationToken.objects.create(
             user=user,
             expires_at=timezone.now() - timedelta(seconds=1),
         )

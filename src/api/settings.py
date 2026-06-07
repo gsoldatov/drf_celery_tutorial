@@ -134,5 +134,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Custom user model
 AUTH_USER_MODEL = "users.User"
 
-# Email activation token lifetime in seconds
-EMAIL_ACTIVATION_TOKEN_LIFETIME = config["EMAIL_ACTIVATION_TOKEN_LIFETIME"]
+# Email verification token lifetime in seconds
+EMAIL_VERIFICATION_TOKEN_LIFETIME = config["EMAIL_VERIFICATION_TOKEN_LIFETIME"]

@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 
 from .models import User
 from .serializers import (
-    ActivationSerializer,
+    EmailVerificationSerializer,
     RegistrationSerializer,
     UserDetailSerializer,
 )
@@ -25,10 +25,10 @@ class UserDetailView(generics.RetrieveAPIView):
     serializer_class = UserDetailSerializer
 
 
-class UserActivationView(APIView):
+class EmailVerificationView(APIView):
     @transaction.atomic
     def post(self, request):
-        serializer = ActivationSerializer(data=request.data)
+        serializer = EmailVerificationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"detail": "Email was successfully verified."})

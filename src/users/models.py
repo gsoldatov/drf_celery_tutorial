@@ -31,11 +31,11 @@ class User(AbstractUser):
     objects = UserManager()
 
 
-class UserActivationToken(models.Model):
+class EmailVerificationToken(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="activation_tokens",
+        related_name="email_verification_tokens",
     )
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     expires_at = models.DateTimeField()

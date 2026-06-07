@@ -1,6 +1,6 @@
 # Implementation Plan
 + plan architecture;
-- drf:
++ drf:
     + set up project:
         + venv, dependencies & django initialization;
         + .env file config -> loading & validation;
@@ -8,11 +8,11 @@
         + user:
             + override default auth user;
             + fields (use exact or similar AbstractUser fields where possible): id, first_name, last_name, email, email_verified (bool, false until email is verified);
-        + user_activation_tokens (id, user_id, token, expires_at);
+        + email_verification_tokens (id, user_id, token, expires_at);
     + set up route handlers without celery:
         + user registration (validate -> add a user to the database -> register a task on commit (later, when celery is added));
         + get an existing user;
-        + activate user account (get token from URL -> check if it exists -> change email_verified of a corresponding user);
+        + verify user email (get token from URL -> check if it exists -> change email_verified of a corresponding user);
     + add docker-compose.yml:
         x drf;          // opted to run dev server & tests locally
         + postgresql;
@@ -30,7 +30,7 @@
     
     + validate .env file, when loading:
         + add validation tests;
-    - rename artifacts related to email_verified field to match its name;
+    + rename artifacts related to email_verified field to match its name;
 
 - configure celery:
     - add celery & rabbitmq to docker-compose.yml;
@@ -73,7 +73,7 @@
 ## Celery Cases
 ### Email "Sending" Task
     - working with an override of auth.user model;
-    - `user_activation_tokens` table stored email validation tokens;
+    - `email_verification_tokens` table stored email validation tokens;
     - not using django-celery-results, since it's redundant for this case;
     - `acks_late=True` for at-least-once delivery — worker crash causes redelivery, idempotency handles duplicates;
     - 2-tier error taxonomy: operational errors (broker/DB down → retry) / application errors (invalid state → fail);
@@ -92,7 +92,7 @@
 
 # Additional Ideas for Tutorial
 - Celery Beat for periodic task execution:
-    - delete expired activation tokens;
+    - delete expired verification tokens;
 - Task result tracking with django-celery-results and a task status polling endpoint:
     ? other use cases, which rely on DCR's table (restarting failed tasks, storing idempotency keys, ???);
 - Canvas primitives: chain, group, chord for task workflows;

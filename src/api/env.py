@@ -62,17 +62,17 @@ def validate_env(env=None):
         )
 
     try:
-        config["EMAIL_ACTIVATION_TOKEN_LIFETIME"] = env.int(
-            "EMAIL_ACTIVATION_TOKEN_LIFETIME"
+        config["EMAIL_VERIFICATION_TOKEN_LIFETIME"] = env.int(
+            "EMAIL_VERIFICATION_TOKEN_LIFETIME"
         )
     except ValueError:
         raise ImproperlyConfigured(
-            "EMAIL_ACTIVATION_TOKEN_LIFETIME must be a valid integer."
+            "EMAIL_VERIFICATION_TOKEN_LIFETIME must be a valid integer."
         )
-    if config["EMAIL_ACTIVATION_TOKEN_LIFETIME"] <= 0:
+    if config["EMAIL_VERIFICATION_TOKEN_LIFETIME"] <= 0:
         raise ImproperlyConfigured(
-            f"EMAIL_ACTIVATION_TOKEN_LIFETIME must be a positive integer, "
-            f"got {config['EMAIL_ACTIVATION_TOKEN_LIFETIME']}."
+            f"EMAIL_VERIFICATION_TOKEN_LIFETIME must be a positive integer, "
+            f"got {config['EMAIL_VERIFICATION_TOKEN_LIFETIME']}."
         )
 
     return config

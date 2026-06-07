@@ -16,7 +16,7 @@ def _valid_env():
         "POSTGRES_DB": "test_db",
         "POSTGRES_USER": "admin",
         "POSTGRES_PASSWORD": "password",
-        "EMAIL_ACTIVATION_TOKEN_LIFETIME": "300",
+        "EMAIL_VERIFICATION_TOKEN_LIFETIME": "300",
     }
 
 
@@ -42,7 +42,7 @@ def test_validate_env_all_valid():
     assert config["POSTGRES_DB"] == "test_db"
     assert config["POSTGRES_USER"] == "admin"
     assert config["POSTGRES_PASSWORD"] == "password"
-    assert config["EMAIL_ACTIVATION_TOKEN_LIFETIME"] == 300
+    assert config["EMAIL_VERIFICATION_TOKEN_LIFETIME"] == 300
 
 
 # ── SECRET_KEY ──────────────────────────────────────────────────────────
@@ -202,30 +202,30 @@ def test_validate_postgres_password():
         validate_env(env=env)
 
 
-# ── EMAIL_ACTIVATION_TOKEN_LIFETIME ─────────────────────────────────────
+# ── EMAIL_VERIFICATION_TOKEN_LIFETIME ───────────────────────────────────
 
 
-def test_validate_email_activation_token_lifetime():
+def test_validate_email_verification_token_lifetime():
     # Missing
     env = _make_env(_valid_env())
-    del env.ENVIRON["EMAIL_ACTIVATION_TOKEN_LIFETIME"]
+    del env.ENVIRON["EMAIL_VERIFICATION_TOKEN_LIFETIME"]
     with pytest.raises(ImproperlyConfigured):
         validate_env(env=env)
 
     # Not an integer
     env = _make_env(_valid_env())
-    env.ENVIRON["EMAIL_ACTIVATION_TOKEN_LIFETIME"] = "abc"
+    env.ENVIRON["EMAIL_VERIFICATION_TOKEN_LIFETIME"] = "abc"
     with pytest.raises(ImproperlyConfigured):
         validate_env(env=env)
 
     # Zero
     env = _make_env(_valid_env())
-    env.ENVIRON["EMAIL_ACTIVATION_TOKEN_LIFETIME"] = "0"
+    env.ENVIRON["EMAIL_VERIFICATION_TOKEN_LIFETIME"] = "0"
     with pytest.raises(ImproperlyConfigured, match="positive integer"):
         validate_env(env=env)
 
     # Negative
     env = _make_env(_valid_env())
-    env.ENVIRON["EMAIL_ACTIVATION_TOKEN_LIFETIME"] = "-1"
+    env.ENVIRON["EMAIL_VERIFICATION_TOKEN_LIFETIME"] = "-1"
     with pytest.raises(ImproperlyConfigured, match="positive integer"):
         validate_env(env=env)

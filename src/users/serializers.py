@@ -5,8 +5,8 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import User, UserActivationToken
-from .tasks import send_activation_email
+from .models import EmailVerificationToken, User
+from .tasks import send_verification_email
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -27,12 +27,12 @@ class RegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop("password_repeat")
         user = User.objects.create_user(**validated_data)
-        UserActivationToken.objects.create(
+        EmailVerificationToken.objects.create(
             user=user,
             expires_at=timezone.now()
-            + timedelta(seconds=settings.EMAIL_ACTIVATION_TOKEN_LIFETIME),
+            + timedelta(seconds=settings.EMAIL_VERIFICATION_TOKEN_LIFETIME),
         )
-        transaction.on_commit(lambda: send_activation_email.delay(user.id))
+        transaction.on_commit(lambda: send_verification_email.delay(user.id))
         return user
 
 
@@ -50,15 +50,15 @@ class UserDetailSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class ActivationSerializer(serializers.Serializer):
+class EmailVerificationSerializer(serializers.Serializer):
     token = serializers.UUIDField()
 
     def validate_token(self, value):
         try:
-            token_obj = UserActivationToken.objects.select_related("user").get(
+            token_obj = EmailVerificationToken.objects.select_related("user").get(
                 token=value
             )
-        except UserActivationToken.DoesNotExist:
+        except EmailVerificationToken.DoesNotExist:
             raise serializers.ValidationError("Invalid token.")
 
         if token_obj.expires_at < timezone.now() and not token_obj.user.email_verified:
