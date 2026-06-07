@@ -1,10 +1,12 @@
 from datetime import timedelta
 
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
 from .models import User, UserActivationToken
+from .tasks import send_activation_email
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -30,6 +32,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
             expires_at=timezone.now()
             + timedelta(seconds=settings.EMAIL_ACTIVATION_TOKEN_LIFETIME),
         )
+        transaction.on_commit(lambda: send_activation_email.delay(user.id))
         return user
 
 

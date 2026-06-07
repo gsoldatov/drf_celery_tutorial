@@ -4,3 +4,5 @@ psycopg[binary]>=3.2
 python-dotenv>=1.0
 pytest>=8.0
 pytest-django>=4.8
+celery>=5.4
+django-test-migrations>=1.4
