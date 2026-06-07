@@ -1,5 +1,5 @@
 # Overview
-A tutorial project, which focuses on use cases on using Celery tasks within a Django Rest Framework application.
+A tutorial project, which focuses on use cases for Celery tasks within a Django Rest Framework application.
 
 Current plan, key architecture decisions and other ideas related to the project are stored in `docs/to-do.md`.
 
