@@ -1,6 +1,7 @@
 # General
 .env
 .qwen/
+*.sqlite3
 
 # Python
 venv/
