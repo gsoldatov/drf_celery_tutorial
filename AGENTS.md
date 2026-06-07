@@ -11,7 +11,6 @@ Current plan, key architecture decisions and other ideas related to the project 
 - Celery as a task runner;
 - RabbitMQ as Celery's message broker;
 - Docker Compose for running project's development and test environment;
-- python-dotenv;
 - pytest-django for tests;
 
 
@@ -34,5 +33,13 @@ Current plan, key architecture decisions and other ideas related to the project 
 - `tests` - project tests:
     - `tests`:
         - subdirectory with test case files;
-        - has nested subdirectories for tests of different types (`migrations`, `views`, `tasks`);
+        - has nested subdirectories for tests of different types:
+            - `config` - tests .env file validation;
+            - `migrations` - tests if database migrations work properly;
+            - `serializers` - tests request validation logic of serializers (but not DB interactions);
+            - `views`:
+                - tests view logic and database interactions;
+                - mocks Celery tasks with pytest-mock;
+            - `tasks`
+                - tests Celery tasks lifecycle, idempotency, error processing, etc.;
         - test case location in nested subdirectories should follow the structure of `src` dir;
