@@ -86,6 +86,22 @@ class TestUserRegistrationView:
 
         mock_delay.assert_not_called()
 
+    def test_db_unavailable(self, api_client, db_unavailable, mocker):
+        mock_delay = mocker.patch("users.tasks.send_verification_email.delay")
+        payload = {
+            "email": "new@example.com",
+            "password": "secret123",
+            "password_repeat": "secret123",
+            "first_name": "Alice",
+            "last_name": "Smith",
+        }
+
+        response = api_client.post(REGISTER_URL, payload)
+
+        assert response.status_code == 503
+        assert response.data == {"detail": "Service temporarily unavailable"}
+        mock_delay.assert_not_called()
+
 
 @pytest.mark.django_db
 class TestUserDetailView:
@@ -105,6 +121,12 @@ class TestUserDetailView:
         response = api_client.get(_detail_url(9999))
 
         assert response.status_code == 404
+
+    def test_db_unavailable(self, api_client, db_unavailable):
+        response = api_client.get(_detail_url(9999))
+
+        assert response.status_code == 503
+        assert response.data == {"detail": "Service temporarily unavailable"}
 
 
 @pytest.mark.django_db
@@ -167,3 +189,11 @@ class TestEmailVerificationView:
 
         assert response.status_code == 400
         assert "token" in response.data
+
+    def test_db_unavailable(self, api_client, db_unavailable):
+        response = api_client.post(
+            ACTIVATE_URL, {"token": "00000000-0000-0000-0000-000000000000"}
+        )
+
+        assert response.status_code == 503
+        assert response.data == {"detail": "Service temporarily unavailable"}

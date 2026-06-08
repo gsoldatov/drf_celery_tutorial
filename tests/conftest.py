@@ -1,7 +1,9 @@
 import pytest
+from django.db import connections
 from kombu import Connection, Queue
 from rest_framework.test import APIClient
 from users.models import User
+from tests.util import get_free_port
 
 
 # Test client
@@ -10,7 +12,22 @@ def api_client():
     return APIClient()
 
 
-# DB data fixtures
+# DB fixtures
+@pytest.fixture
+def db_unavailable():
+    """Temporarily point DATABASES at a dead port so DB operations fail with OperationalError."""
+    free_port = get_free_port()
+    default_conn = connections["default"]
+    original_port = default_conn.settings_dict["PORT"]
+    default_conn.settings_dict["PORT"] = str(free_port)
+    default_conn.close()
+    try:
+        yield
+    finally:
+        default_conn.settings_dict["PORT"] = original_port
+        default_conn.close()
+
+
 @pytest.fixture
 def create_user(db):
     def _create_user(**kwargs):

@@ -27,6 +27,7 @@
             + serializers (validation);
             + views:
                 + add a Celery task stub in view, but make it mockable for isolated testing of views;
+                + database network errors;
     
     + validate .env file, when loading:
         + add validation tests;
@@ -36,32 +37,30 @@
     + add rabbitmq to docker-compose.yml;
     + update prjoect config -> configure celery & rabbitmq;
     - add email task:
-        - add a task function;
+        + add a task function;
         - ensure task idempotency;
-        - configure task retries;
-        - configure at least once delivery;
+        + configure task retries;
+        + configure at least once delivery;
 
     x add a worker to docker-compose.yml;   // local process is used instead
 
     - add integration tests for celery tasks:
-        - update fixtures:
-            - test rabbitmq queue setup & teardown;
-            ? other;
+        + update fixtures:
+            + test rabbitmq queue setup & teardown;
         - test cases:
             - integration cases for tasks:
                 - successful task;
                 - idempotency;
                 - failure & retry:
                     - operational errors:
-                        - broker or DB down);
+                        - broker down;
+                        - DB down;
                     ? application errors (figure out edge cases)
                     ? monkeypatch task or a function called inside it to simulate failures
             - integration test cases for views:
                 - db down;
                 - broker down;
 
-- more test cases:
-    - views -> db down;
 
 - add admin user & test the full setup manually;
 ? add admin user to config;

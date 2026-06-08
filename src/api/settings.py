@@ -142,3 +142,8 @@ CELERY_BROKER_URL = (
     f"amqp://{config['CELERY_BROKER_HOST']}:{config['CELERY_BROKER_PORT']}//"
 )
 CELERY_TASK_DEFAULT_QUEUE = config["CELERY_TASK_DEFAULT_QUEUE"]
+
+# Django REST Framework
+REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "api.exception_handler.custom_exception_handler",
+}
