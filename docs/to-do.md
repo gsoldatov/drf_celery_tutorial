@@ -33,47 +33,48 @@
         + add validation tests;
     + rename artifacts related to email_verified field to match its name;
 
-- configure celery:
++ configure celery:
     + add rabbitmq to docker-compose.yml;
     + update prjoect config -> configure celery & rabbitmq;
-    - add email task:
+    + add email task:
         + add a task function;
-        - ensure task idempotency;
+        + ensure task idempotency;
         + configure task retries;
         + configure at least once delivery;
 
     x add a worker to docker-compose.yml;   // local process is used instead
 
-    - add integration tests for celery tasks:
+    + add integration tests for celery tasks:
         + update fixtures:
             + test rabbitmq queue setup & teardown;
-        - test cases:
-            - integration cases for tasks:
+        + test cases:
+            + e2e / integration cases for tasks:
                 + successful task:
                     + send_email receives correct email and token;
                     + token state & send time updated after email is "sent";
-                - errors:
+                + errors:
                     + broker down:
                         + view returns correct response;
                         + task creation error is handled gracefully;
-                    - DB down:
-                        - before email is "sent":
-                            - task is failed are retried:
-                                - temporary failure -> task is retried and succeds;
-                                - constant failure -> task is failed and db is not updated;
-                        - after email is "sent":
-                            - task is considered complete;  // email is not sent twice
-                    - email "sending" failure:
-                        - task is failed and retried:
-                            - temporary failure -> task is retried and succeeds;
-                            - constant failure -> task is failed;
-                - idempotency:
-                    - if multiple tasks are fired for the same token, email is sent only once:
-                        - 2 tasks simultaneously receive the same token;
-                        - second task starts after first completes;
+                    + DB down:
+                        + before email is "sent":
+                            + task is failed are retried:
+                                + temporary failure -> task is retried and succeds;
+                                + constant failure -> task is failed and db is not updated;
+                        + after email is "sent":
+                            + task is considered complete;  // email is not sent twice
+                    + email "sending" failure:
+                        + task is failed and retried:
+                            + temporary failure -> task is retried and succeeds;
+                            + constant failure -> task is failed;
+                + idempotency:
+                    + if multiple tasks are fired for the same token, email is sent only once:
+                        + 2 tasks simultaneously receive the same token;
+                        + second task starts after first completes;
 
 
 - add admin user & test the full setup manually;
+- add a worker runner script;   // add worker port to config?
 ? add admin user to config;
 ? add a script / functions for setting up dev environment (running migrations, etc.);
 - add readme;

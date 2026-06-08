@@ -1,10 +1,12 @@
 import time
+from datetime import timedelta
 
 import pytest
 from django.db.utils import OperationalError
 from django.urls import reverse
+from django.utils import timezone
 from users.models import EmailVerificationToken
-from users.tasks import EmailSendError
+from users.tasks import EmailSendError, send_verification_email
 
 REGISTER_URL = reverse("user-registration")
 
@@ -215,3 +217,48 @@ class TestEmailSendingError:
         token.refresh_from_db()
         assert token.status == EmailVerificationToken.Status.ERROR
         assert mock_send.call_count == 4  # 1 initial + 3 retries
+
+
+@pytest.mark.django_db(transaction=True)
+class TestIdempotency:
+    """
+    Firing multiple tasks for the same token results in exactly one email.
+    """
+    def test_concurrent_tasks_send_email_once(
+        self, create_user, celery_worker, purge_test_queue, mocker
+    ):
+        mock_send = mocker.patch("users.tasks.send_email")
+        user = create_user(email="alice@example.com")
+        token = EmailVerificationToken.objects.create(
+            user=user,
+            expires_at=timezone.now() + timedelta(seconds=300),
+        )
+
+        send_verification_email.delay(token.id)
+        send_verification_email.delay(token.id)
+
+        _wait_for_status(token, EmailVerificationToken.Status.SENT)
+        # Let the worker process the second task (which reads SENT and skips).
+        time.sleep(1)
+        assert mock_send.call_count == 1
+
+    def test_second_task_after_completion_skips(
+        self, create_user, celery_worker, purge_test_queue, mocker
+    ):
+        mock_send = mocker.patch("users.tasks.send_email")
+        user = create_user(email="alice@example.com")
+        token = EmailVerificationToken.objects.create(
+            user=user,
+            expires_at=timezone.now() + timedelta(seconds=300),
+        )
+
+        send_verification_email.delay(token.id)
+        _wait_for_status(token, EmailVerificationToken.Status.SENT)
+
+        send_verification_email.delay(token.id)
+        # Let the worker process the second task.
+        time.sleep(1)
+
+        token.refresh_from_db()
+        assert token.status == EmailVerificationToken.Status.SENT
+        assert mock_send.call_count == 1
