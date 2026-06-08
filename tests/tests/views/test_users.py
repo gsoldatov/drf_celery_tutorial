@@ -197,3 +197,22 @@ class TestEmailVerificationView:
 
         assert response.status_code == 503
         assert response.data == {"detail": "Service temporarily unavailable"}
+
+
+@pytest.mark.django_db(transaction=True)
+class TestBrokerDown:
+    def test_registration_succeeds_when_broker_down(
+        self, api_client, broker_unavailable
+    ):
+        payload = {
+            "email": "alice@example.com",
+            "password": "secret123",
+            "password_repeat": "secret123",
+            "first_name": "Alice",
+            "last_name": "Smith",
+        }
+
+        response = api_client.post(REGISTER_URL, payload)
+
+        assert response.status_code == 201
+        assert User.objects.filter(email="alice@example.com").exists()

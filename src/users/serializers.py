@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from kombu.exceptions import OperationalError as KombuOperationalError
 from rest_framework import serializers
 
 from .models import EmailVerificationToken, User
@@ -32,7 +33,16 @@ class RegistrationSerializer(serializers.ModelSerializer):
             expires_at=timezone.now()
             + timedelta(seconds=settings.EMAIL_VERIFICATION_TOKEN_LIFETIME),
         )
-        transaction.on_commit(lambda: send_verification_email.delay(token.id))
+
+        def _dispatch():
+            try:
+                send_verification_email.delay(token.id)
+            except KombuOperationalError:
+                # Broker unreachable -> move on
+                # (can add logging or additional processing here)
+                pass
+
+        transaction.on_commit(_dispatch)
         return user
 
 

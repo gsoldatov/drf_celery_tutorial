@@ -29,6 +29,23 @@ def db_unavailable():
 
 
 @pytest.fixture
+def broker_unavailable():
+    """Temporarily point Celery at a dead broker so .delay() raises OperationalError."""
+    from django.conf import settings as django_settings
+    from api.celery import app
+
+    free_port = get_free_port()
+    original = django_settings.CELERY_BROKER_URL
+    django_settings.CELERY_BROKER_URL = f"amqp://localhost:{free_port}//"
+    app.config_from_object("django.conf:settings", namespace="CELERY")
+    try:
+        yield
+    finally:
+        django_settings.CELERY_BROKER_URL = original
+        app.config_from_object("django.conf:settings", namespace="CELERY")
+
+
+@pytest.fixture
 def create_user(db):
     def _create_user(**kwargs):
         defaults = {

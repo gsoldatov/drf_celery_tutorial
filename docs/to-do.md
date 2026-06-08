@@ -53,9 +53,9 @@
                     + send_email receives correct email and token;
                     + token state & send time updated after email is "sent";
                 - errors:
-                    - broker down:
-                        - view returns correct response;
-                        - task creation error is handled gracefully;
+                    + broker down:
+                        + view returns correct response;
+                        + task creation error is handled gracefully;
                     - DB down:
                         - before email is "sent":
                             - task is failed are retried:
