@@ -8,6 +8,14 @@ from users.tasks import EmailSendError
 
 REGISTER_URL = reverse("user-registration")
 
+VALID_PAYLOAD = {
+    "email": "alice@example.com",
+    "password": "secret123",
+    "password_repeat": "secret123",
+    "first_name": "Alice",
+    "last_name": "Smith",
+}
+
 POLL_TIMEOUT = 5  # seconds
 POLL_INTERVAL = 0.1  # seconds
 
@@ -33,15 +41,8 @@ class TestSuccessfulTask:
         self, api_client, celery_worker, purge_test_queue, mocker
     ):
         mock_send = mocker.patch("users.tasks.send_email")
-        payload = {
-            "email": "alice@example.com",
-            "password": "secret123",
-            "password_repeat": "secret123",
-            "first_name": "Alice",
-            "last_name": "Smith",
-        }
 
-        response = api_client.post(REGISTER_URL, payload)
+        response = api_client.post(REGISTER_URL, VALID_PAYLOAD)
 
         assert response.status_code == 201
         token = EmailVerificationToken.objects.get()
@@ -75,14 +76,7 @@ class TestDbDownBeforeEmail:
             side_effect=[OperationalError, DEFAULT],
         )
 
-        payload = {
-            "email": "alice@example.com",
-            "password": "secret123",
-            "password_repeat": "secret123",
-            "first_name": "Alice",
-            "last_name": "Smith",
-        }
-        response = api_client.post(REGISTER_URL, payload)
+        response = api_client.post(REGISTER_URL, VALID_PAYLOAD)
         assert response.status_code == 201
         token = EmailVerificationToken.objects.get()
 
@@ -99,14 +93,7 @@ class TestDbDownBeforeEmail:
             side_effect=OperationalError,
         )
 
-        payload = {
-            "email": "alice@example.com",
-            "password": "secret123",
-            "password_repeat": "secret123",
-            "first_name": "Alice",
-            "last_name": "Smith",
-        }
-        response = api_client.post(REGISTER_URL, payload)
+        response = api_client.post(REGISTER_URL, VALID_PAYLOAD)
         assert response.status_code == 201
         token = EmailVerificationToken.objects.get()
 
@@ -141,14 +128,7 @@ class TestDbDownDuringError:
             )
         )
 
-        payload = {
-            "email": "alice@example.com",
-            "password": "secret123",
-            "password_repeat": "secret123",
-            "first_name": "Alice",
-            "last_name": "Smith",
-        }
-        response = api_client.post(REGISTER_URL, payload)
+        response = api_client.post(REGISTER_URL, VALID_PAYLOAD)
         assert response.status_code == 201
         token = EmailVerificationToken.objects.get()
 
@@ -163,14 +143,7 @@ class TestDbDownDuringError:
         )
         mocker.patch("users.tasks._update_status_safe")  # no-op: DB down
 
-        payload = {
-            "email": "alice@example.com",
-            "password": "secret123",
-            "password_repeat": "secret123",
-            "first_name": "Alice",
-            "last_name": "Smith",
-        }
-        response = api_client.post(REGISTER_URL, payload)
+        response = api_client.post(REGISTER_URL, VALID_PAYLOAD)
         assert response.status_code == 201
         token = EmailVerificationToken.objects.get()
 
@@ -193,14 +166,7 @@ class TestDbDownAfterEmail:
         mock_send = mocker.patch("users.tasks.send_email")
         mocker.patch("users.tasks._update_status_safe")  # no-op: DB down in Phase 3
 
-        payload = {
-            "email": "alice@example.com",
-            "password": "secret123",
-            "password_repeat": "secret123",
-            "first_name": "Alice",
-            "last_name": "Smith",
-        }
-        response = api_client.post(REGISTER_URL, payload)
+        response = api_client.post(REGISTER_URL, VALID_PAYLOAD)
         assert response.status_code == 201
         token = EmailVerificationToken.objects.get()
 
@@ -211,3 +177,41 @@ class TestDbDownAfterEmail:
         assert mock_send.call_count == 1
         token.refresh_from_db()
         assert token.status == EmailVerificationToken.Status.SENDING
+
+
+@pytest.mark.django_db(transaction=True)
+class TestEmailSendingError:
+    """
+    Email sending fails during phase 2 of send verifiction email task
+    """
+    def test_temporary_failure_retries_and_succeeds(
+        self, api_client, celery_worker, purge_test_queue, mocker
+    ):
+        mock_send = mocker.patch(
+            "users.tasks.send_email",
+            side_effect=[EmailSendError, None],
+        )
+
+        response = api_client.post(REGISTER_URL, VALID_PAYLOAD)
+        assert response.status_code == 201
+        token = EmailVerificationToken.objects.get()
+
+        _wait_for_status(token, EmailVerificationToken.Status.SENT)
+        assert mock_send.call_count == 2
+
+    def test_constant_failure_exhausts_retries(
+        self, api_client, celery_worker, purge_test_queue, mocker
+    ):
+        mock_send = mocker.patch(
+            "users.tasks.send_email", side_effect=EmailSendError
+        )
+
+        response = api_client.post(REGISTER_URL, VALID_PAYLOAD)
+        assert response.status_code == 201
+        token = EmailVerificationToken.objects.get()
+
+        # Wait for max_retries to exhaust.
+        time.sleep(2)
+        token.refresh_from_db()
+        assert token.status == EmailVerificationToken.Status.ERROR
+        assert mock_send.call_count == 4  # 1 initial + 3 retries
