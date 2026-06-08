@@ -11,5 +11,20 @@ services:
     volumes:
       - drf_celery_tutorial_postgres_data:/var/lib/postgresql/data
 
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: drf_celery_tutorial_rabbitmq
+    ports:
+      - "${CELERY_BROKER_PORT}:5672"
+      - "${CELERY_BROKER_MANAGEMENT_PORT}:15672"
+    volumes:
+      - drf_celery_tutorial_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   drf_celery_tutorial_postgres_data:
+  drf_celery_tutorial_rabbitmq_data:

@@ -16,6 +16,10 @@ def _valid_env():
         "POSTGRES_DB": "test_db",
         "POSTGRES_USER": "admin",
         "POSTGRES_PASSWORD": "password",
+        "CELERY_BROKER_HOST": "localhost",
+        "CELERY_BROKER_PORT": "5672",
+        "CELERY_BROKER_MANAGEMENT_PORT": "15672",
+        "CELERY_TASK_DEFAULT_QUEUE": "celery",
         "EMAIL_VERIFICATION_TOKEN_LIFETIME": "300",
     }
 
@@ -42,6 +46,10 @@ def test_validate_env_all_valid():
     assert config["POSTGRES_DB"] == "test_db"
     assert config["POSTGRES_USER"] == "admin"
     assert config["POSTGRES_PASSWORD"] == "password"
+    assert config["CELERY_BROKER_HOST"] == "localhost"
+    assert config["CELERY_BROKER_PORT"] == 5672
+    assert config["CELERY_BROKER_MANAGEMENT_PORT"] == 15672
+    assert config["CELERY_TASK_DEFAULT_QUEUE"] == "celery"
     assert config["EMAIL_VERIFICATION_TOKEN_LIFETIME"] == 300
 
 
@@ -198,6 +206,108 @@ def test_validate_postgres_password():
     # Empty
     env = _make_env(_valid_env())
     env.ENVIRON["POSTGRES_PASSWORD"] = ""
+    with pytest.raises(ImproperlyConfigured):
+        validate_env(env=env)
+
+
+# ── CELERY_BROKER_HOST ──────────────────────────────────────────────────
+
+
+def test_validate_celery_broker_host():
+    # Missing
+    env = _make_env(_valid_env())
+    del env.ENVIRON["CELERY_BROKER_HOST"]
+    with pytest.raises(ImproperlyConfigured):
+        validate_env(env=env)
+
+    # Empty
+    env = _make_env(_valid_env())
+    env.ENVIRON["CELERY_BROKER_HOST"] = ""
+    with pytest.raises(ImproperlyConfigured):
+        validate_env(env=env)
+
+
+# ── CELERY_BROKER_PORT ──────────────────────────────────────────────────
+
+
+def test_validate_celery_broker_port():
+    # Missing
+    env = _make_env(_valid_env())
+    del env.ENVIRON["CELERY_BROKER_PORT"]
+    with pytest.raises(ImproperlyConfigured):
+        validate_env(env=env)
+
+    # Not an integer
+    env = _make_env(_valid_env())
+    env.ENVIRON["CELERY_BROKER_PORT"] = "abc"
+    with pytest.raises(ImproperlyConfigured):
+        validate_env(env=env)
+
+    # < 1
+    env = _make_env(_valid_env())
+    env.ENVIRON["CELERY_BROKER_PORT"] = "0"
+    with pytest.raises(ImproperlyConfigured, match="CELERY_BROKER_PORT must be"):
+        validate_env(env=env)
+
+    # > 65535
+    env = _make_env(_valid_env())
+    env.ENVIRON["CELERY_BROKER_PORT"] = "65536"
+    with pytest.raises(ImproperlyConfigured, match="CELERY_BROKER_PORT must be"):
+        validate_env(env=env)
+
+    # Negative
+    env = _make_env(_valid_env())
+    env.ENVIRON["CELERY_BROKER_PORT"] = "-1"
+    with pytest.raises(ImproperlyConfigured, match="CELERY_BROKER_PORT must be"):
+        validate_env(env=env)
+
+
+# ── CELERY_BROKER_MANAGEMENT_PORT ───────────────────────────────────────
+
+
+def test_validate_celery_broker_management_port():
+    # Missing
+    env = _make_env(_valid_env())
+    del env.ENVIRON["CELERY_BROKER_MANAGEMENT_PORT"]
+    with pytest.raises(ImproperlyConfigured):
+        validate_env(env=env)
+
+    # Not an integer
+    env = _make_env(_valid_env())
+    env.ENVIRON["CELERY_BROKER_MANAGEMENT_PORT"] = "abc"
+    with pytest.raises(ImproperlyConfigured):
+        validate_env(env=env)
+
+    # < 1
+    env = _make_env(_valid_env())
+    env.ENVIRON["CELERY_BROKER_MANAGEMENT_PORT"] = "0"
+    with pytest.raises(
+        ImproperlyConfigured, match="CELERY_BROKER_MANAGEMENT_PORT must be"
+    ):
+        validate_env(env=env)
+
+    # > 65535
+    env = _make_env(_valid_env())
+    env.ENVIRON["CELERY_BROKER_MANAGEMENT_PORT"] = "65536"
+    with pytest.raises(
+        ImproperlyConfigured, match="CELERY_BROKER_MANAGEMENT_PORT must be"
+    ):
+        validate_env(env=env)
+
+
+# ── CELERY_TASK_DEFAULT_QUEUE ───────────────────────────────────────────
+
+
+def test_validate_celery_task_default_queue():
+    # Missing
+    env = _make_env(_valid_env())
+    del env.ENVIRON["CELERY_TASK_DEFAULT_QUEUE"]
+    with pytest.raises(ImproperlyConfigured):
+        validate_env(env=env)
+
+    # Empty
+    env = _make_env(_valid_env())
+    env.ENVIRON["CELERY_TASK_DEFAULT_QUEUE"] = ""
     with pytest.raises(ImproperlyConfigured):
         validate_env(env=env)
 

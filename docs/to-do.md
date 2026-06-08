@@ -33,30 +33,35 @@
     + rename artifacts related to email_verified field to match its name;
 
 - configure celery:
-    - add celery & rabbitmq to docker-compose.yml;
-    - update prjoect config -> configure celery & rabbitmq;
+    + add rabbitmq to docker-compose.yml;
+    + update prjoect config -> configure celery & rabbitmq;
     - add email task:
         - add a task function;
         - ensure task idempotency;
         - configure task retries;
         - configure at least once delivery;
 
-    ? add a worker to docker-compose.yml;
+    x add a worker to docker-compose.yml;   // local process is used instead
 
     - add integration tests for celery tasks:
         - update fixtures:
             - test rabbitmq queue setup & teardown;
             ? other;
         - test cases:
-            ? new endpoints;
-            ? new migrations;
             - integration cases for tasks:
                 - successful task;
                 - idempotency;
                 - failure & retry:
-                    - operational errors (broker or DB down);
+                    - operational errors:
+                        - broker or DB down);
                     ? application errors (figure out edge cases)
                     ? monkeypatch task or a function called inside it to simulate failures
+            - integration test cases for views:
+                - db down;
+                - broker down;
+
+- more test cases:
+    - views -> db down;
 
 - add admin user & test the full setup manually;
 ? add admin user to config;

@@ -136,3 +136,9 @@ AUTH_USER_MODEL = "users.User"
 
 # Email verification token lifetime in seconds
 EMAIL_VERIFICATION_TOKEN_LIFETIME = config["EMAIL_VERIFICATION_TOKEN_LIFETIME"]
+
+# Celery
+CELERY_BROKER_URL = (
+    f"amqp://{config['CELERY_BROKER_HOST']}:{config['CELERY_BROKER_PORT']}//"
+)
+CELERY_TASK_DEFAULT_QUEUE = config["CELERY_TASK_DEFAULT_QUEUE"]

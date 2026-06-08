@@ -61,6 +61,44 @@ def validate_env(env=None):
             "POSTGRES_PASSWORD must be a non-empty string."
         )
 
+    config["CELERY_BROKER_HOST"] = env.str("CELERY_BROKER_HOST")
+    if not config["CELERY_BROKER_HOST"]:
+        raise ImproperlyConfigured(
+            "CELERY_BROKER_HOST must be a non-empty string."
+        )
+
+    try:
+        config["CELERY_BROKER_PORT"] = env.int("CELERY_BROKER_PORT")
+    except ValueError:
+        raise ImproperlyConfigured(
+            "CELERY_BROKER_PORT must be a valid integer."
+        )
+    if not (1 <= config["CELERY_BROKER_PORT"] <= 65535):
+        raise ImproperlyConfigured(
+            f"CELERY_BROKER_PORT must be between 1 and 65535, "
+            f"got {config['CELERY_BROKER_PORT']}."
+        )
+
+    try:
+        config["CELERY_BROKER_MANAGEMENT_PORT"] = env.int(
+            "CELERY_BROKER_MANAGEMENT_PORT"
+        )
+    except ValueError:
+        raise ImproperlyConfigured(
+            "CELERY_BROKER_MANAGEMENT_PORT must be a valid integer."
+        )
+    if not (1 <= config["CELERY_BROKER_MANAGEMENT_PORT"] <= 65535):
+        raise ImproperlyConfigured(
+            f"CELERY_BROKER_MANAGEMENT_PORT must be between 1 and 65535, "
+            f"got {config['CELERY_BROKER_MANAGEMENT_PORT']}."
+        )
+
+    config["CELERY_TASK_DEFAULT_QUEUE"] = env.str("CELERY_TASK_DEFAULT_QUEUE")
+    if not config["CELERY_TASK_DEFAULT_QUEUE"]:
+        raise ImproperlyConfigured(
+            "CELERY_TASK_DEFAULT_QUEUE must be a non-empty string."
+        )
+
     try:
         config["EMAIL_VERIFICATION_TOKEN_LIFETIME"] = env.int(
             "EMAIL_VERIFICATION_TOKEN_LIFETIME"
