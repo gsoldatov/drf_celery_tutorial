@@ -46,20 +46,34 @@ TEST_QUEUE = "celery_test"
 
 
 def _purge_test_queue():
+    """Declare the test queue (durable, for RabbitMQ 4 compat) and purge it."""
     from api.celery import app
 
     with Connection(app.conf.broker_url) as conn:
-        Queue(TEST_QUEUE)(conn.channel()).purge()
+        Queue(TEST_QUEUE, durable=True)(conn.channel()).purge()
 
 
 @pytest.fixture(scope="module")
 def celery_test_queue():
-    """Point Celery at a dedicated test queue (one-time setup per module)."""
+    """Configure Celery to use a dedicated test queue (module-scoped, once per file).
+
+    Overrides CELERY_TASK_DEFAULT_QUEUE at the Django settings level because
+    app.conf.update() cannot change task_default_queue after config_from_object()
+    has loaded it.  Durable queues are required for RabbitMQ 4, and
+    task_create_missing_queues=False prevents Celery from re-declaring the queue
+    with non-durable defaults on each .delay() call.
+    """
+    from django.conf import settings as django_settings
     from api.celery import app
+
+    # Override at the Django settings level so Celery picks it up.
+    django_settings.CELERY_TASK_DEFAULT_QUEUE = TEST_QUEUE
+    app.config_from_object("django.conf:settings", namespace="CELERY")
 
     app.conf.update(
         task_always_eager=False,
-        task_default_queue=TEST_QUEUE,
+        task_queues=[Queue(TEST_QUEUE, durable=True)],
+        task_create_missing_queues=False,
     )
 
 
@@ -71,3 +85,31 @@ def purge_test_queue(celery_test_queue):
         yield
     finally:
         _purge_test_queue()
+
+
+@pytest.fixture(scope="module")
+def celery_worker(celery_test_queue):
+    """Start a Celery worker in a background thread, consuming the test queue through
+    RabbitMQ (module-scoped — started once per test file).
+
+    Uses start_worker with pool='solo' (single-threaded, in-process) instead of
+    task_always_eager=True because eager mode bypasses the broker entirely.
+    This gives a true end-to-end path: view → broker → worker.
+
+    The worker thread is daemon and may block on a socket read at shutdown;
+    shutdown_timeout=0 skips the join entirely — the process exit kills it.
+    """
+    from celery.contrib.testing.worker import start_worker
+    from api.celery import app
+
+    try:
+        with start_worker(
+            app,
+            pool="solo",             # single-threaded, in-process — no child workers
+            queues=[TEST_QUEUE],     # only consume from the isolated test queue
+            perform_ping_check=False,  # skip the startup ping round-trip
+            shutdown_timeout=0,      # don't wait for the daemon thread on teardown
+        ) as worker:
+            yield worker
+    except RuntimeError:
+        pass  # worker thread didn't unblock — daemon, killed with the process

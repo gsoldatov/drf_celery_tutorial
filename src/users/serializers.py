@@ -27,12 +27,12 @@ class RegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop("password_repeat")
         user = User.objects.create_user(**validated_data)
-        EmailVerificationToken.objects.create(
+        token = EmailVerificationToken.objects.create(
             user=user,
             expires_at=timezone.now()
             + timedelta(seconds=settings.EMAIL_VERIFICATION_TOKEN_LIFETIME),
         )
-        transaction.on_commit(lambda: send_verification_email.delay(user.id))
+        transaction.on_commit(lambda: send_verification_email.delay(token.id))
         return user
 
 

@@ -49,17 +49,28 @@
             + test rabbitmq queue setup & teardown;
         - test cases:
             - integration cases for tasks:
-                - successful task;
-                - idempotency;
-                - failure & retry:
-                    - operational errors:
-                        - broker down;
-                        - DB down;
-                    ? application errors (figure out edge cases)
-                    ? monkeypatch task or a function called inside it to simulate failures
-            - integration test cases for views:
-                - db down;
-                - broker down;
+                + successful task:
+                    + send_email receives correct email and token;
+                    + token state & send time updated after email is "sent";
+                - errors:
+                    - broker down:
+                        - view returns correct response;
+                        - task creation error is handled gracefully;
+                    - DB down:
+                        - before email is "sent":
+                            - task is failed are retried:
+                                - temporary failure -> task is retried and succeds;
+                                - constant failure -> task is failed and db is not updated;
+                        - after email is "sent":
+                            - task is considered complete;  // email is not sent twice
+                    - email "sending" failure:
+                        - task is failed and retried:
+                            - temporary failure -> task is retried and succeeds;
+                            - constant failure -> task is failed;
+                - idempotency:
+                    - if multiple tasks are fired for the same token, email is sent only once:
+                        - 2 tasks simultaneously receive the same token;
+                        - second task starts after first completes;
 
 
 - add admin user & test the full setup manually;
@@ -74,29 +85,24 @@
 - no auth restrictions for views;
 - Celery tasks are dispatched via `transaction.on_commit()`;
 
-## Celery Cases
-### Email "Sending" Task
-    - working with an override of auth.user model;
-    - `email_verification_tokens` table stored email validation tokens;
-    - not using django-celery-results, since it's redundant for this case;
-    - `acks_late=True` for at-least-once delivery — worker crash causes redelivery, idempotency handles duplicates;
-    - 2-tier error taxonomy: operational errors (broker/DB down → retry) / application errors (invalid state → fail);
 
 ## Development & Testing
 - Single `docker-compose.yml` for dev and test — test isolation via hash-suffixed DB and queue names;
 - pytest with integration tests against real RabbitMQ — no eager-mode shortcuts;
 
 
-
-
-
-
-
+## Celery Cases
+### Email "Sending" Task
+- working with an override of auth.user model;
+- `email_verification_tokens` table stored email validation tokens;
+- not using django-celery-results, since it's redundant for this case;
+- `acks_late=True` for at-least-once delivery — worker crash causes redelivery, idempotency handles duplicates;
 
 
 # Additional Ideas for Tutorial
 - Celery Beat for periodic task execution:
     - delete expired verification tokens;
+- Dead letter queue (failed email sends);
 - Task result tracking with django-celery-results and a task status polling endpoint:
     ? other use cases, which rely on DCR's table (restarting failed tasks, storing idempotency keys, ???);
 - Canvas primitives: chain, group, chord for task workflows;

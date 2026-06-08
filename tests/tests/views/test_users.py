@@ -31,8 +31,8 @@ class TestUserRegistrationView:
         user = User.objects.get(email="new@example.com")
         assert user.email_verified is False
         assert user.check_password("secret123")
-        assert EmailVerificationToken.objects.filter(user=user).exists()
-        mock_delay.assert_called_once_with(user.id)
+        token = EmailVerificationToken.objects.get(user=user)
+        mock_delay.assert_called_once_with(token.id)
 
     def test_password_mismatch(self, api_client):
         payload = {

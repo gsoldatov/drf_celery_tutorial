@@ -32,6 +32,12 @@ class User(AbstractUser):
 
 
 class EmailVerificationToken(models.Model):
+    class Status(models.TextChoices):
+        NOT_SENT = "not_sent", "Not Sent"
+        SENDING = "sending", "Sending"
+        SENT = "sent", "Sent"
+        ERROR = "error", "Error"
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -39,3 +45,9 @@ class EmailVerificationToken(models.Model):
     )
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     expires_at = models.DateTimeField()
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.NOT_SENT,
+    )
+    sent_at = models.DateTimeField(null=True, blank=True)
