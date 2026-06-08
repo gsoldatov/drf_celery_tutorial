@@ -16,10 +16,11 @@ Current plan, key architecture decisions and other ideas related to the project 
 
 ## Key Project Goals
 - define basic project layout & infrastructure;
-- implement speicif scenarios, where Celery is used for running async tasks triggered by DRF request processing:
-    - "send" an activation email when a user registers:
+- implement scenarios, where Celery is used for running async tasks triggered by DRF request processing:
+    - "send" a verification email when a user registers:
         - process request -> trigger email "sending" task -> process task;
         - ensure idempotency and proper failure processing on all stages of the task;
+    - periodically clear expired email verification token;
     - potentially, other scenarios later on.
 
 
@@ -43,3 +44,9 @@ Current plan, key architecture decisions and other ideas related to the project 
             - `tasks`
                 - tests Celery tasks lifecycle, idempotency, error processing, etc.;
         - test case location in nested subdirectories should follow the structure of `src` dir;
+
+
+## Test Writing Guidelines
+- View tests are performed using a test db in PostgreSQL container (standard pytest-django approach);
+- task tests are performed using PostgreSQL and RabbitMQ containers (like for DB, a single test queue is created for a test module and purged after a test);
+- network errors are simulated by changing app configuration with a fixture on inside a test case (e.g., by changing port of a service);
