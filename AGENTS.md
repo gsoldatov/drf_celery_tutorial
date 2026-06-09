@@ -7,8 +7,9 @@ Current plan, key architecture decisions and other ideas related to the project 
 ## Project Stack
 - Python 3.13;
 - DRF as a web-framework;
-- PostgreSQL as a database (SQLite as a stub on start);
+- PostgreSQL 17 as a database;
 - Celery as a task runner;
+- Celery Beat + shelve for periodic tasks;
 - RabbitMQ as Celery's message broker;
 - Docker Compose for running project's development and test environment;
 - pytest-django for tests;
@@ -27,10 +28,13 @@ Current plan, key architecture decisions and other ideas related to the project 
 ## Project Layout
 - `docs` - project to-do list & documentation;
 - `src` - project source code:
-    `api` - root app;
+    `api`:
+        - root app;
+        - stores project and Celery configurations;
     `users`:
         - override of auth.user;
-        - used in the "send" email task;
+        - used in the "send" verification email and verification tokens cleanup task;
+        - contains several endpoints and Celery tasks;
 - `tests` - project tests:
     - `tests`:
         - subdirectory with test case files;
@@ -50,3 +54,6 @@ Current plan, key architecture decisions and other ideas related to the project 
 - View tests are performed using a test db in PostgreSQL container (standard pytest-django approach);
 - task tests are performed using PostgreSQL and RabbitMQ containers (like for DB, a single test queue is created for a test module and purged after a test);
 - network errors are simulated by changing app configuration with a fixture on inside a test case (e.g., by changing port of a service);
+- Celery Beat tests:
+    - are permormed using containers as well, where applicable;
+    - periodic tasks can be invoked directly, instead of adding separate fixtures for triggering beats;
