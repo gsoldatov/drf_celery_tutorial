@@ -63,11 +63,11 @@ TEST_QUEUE = "celery_test"
 
 
 def _purge_test_queue():
-    """Declare the test queue (durable, for RabbitMQ 4 compat) and purge it."""
+    """Declare the test queue and purge it."""
     from api.celery import app
 
     with Connection(app.conf.broker_url) as conn:
-        Queue(TEST_QUEUE, durable=True)(conn.channel()).purge()
+        Queue(TEST_QUEUE)(conn.channel()).purge()
 
 
 @pytest.fixture(scope="module")
@@ -76,9 +76,7 @@ def celery_test_queue():
 
     Overrides CELERY_TASK_DEFAULT_QUEUE at the Django settings level because
     app.conf.update() cannot change task_default_queue after config_from_object()
-    has loaded it.  Durable queues are required for RabbitMQ 4, and
-    task_create_missing_queues=False prevents Celery from re-declaring the queue
-    with non-durable defaults on each .delay() call.
+    has loaded it.
     """
     from django.conf import settings as django_settings
     from api.celery import app
@@ -89,8 +87,7 @@ def celery_test_queue():
 
     app.conf.update(
         task_always_eager=False,
-        task_queues=[Queue(TEST_QUEUE, durable=True)],
-        task_create_missing_queues=False,
+        task_queues=[Queue(TEST_QUEUE)]
     )
 
 

@@ -12,7 +12,8 @@ services:
       - drf_celery_tutorial_postgres_data:/var/lib/postgresql/data
 
   rabbitmq:
-    image: rabbitmq:4-management
+    # image: rabbitmq:4-management
+    image: rabbitmq:4.2-management
     container_name: drf_celery_tutorial_rabbitmq
     ports:
       - "${CELERY_BROKER_PORT}:5672"

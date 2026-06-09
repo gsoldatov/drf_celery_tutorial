@@ -143,17 +143,6 @@ CELERY_BROKER_URL = (
 )
 CELERY_TASK_DEFAULT_QUEUE = config["CELERY_TASK_DEFAULT_QUEUE"]
 
-# RabbitMQ 4 rejects transient non-exclusive queues, which Celery's pidbox
-# (worker remote-control) queue is.  Disable remote control to skip it.
-CELERY_WORKER_ENABLE_REMOTE_CONTROL = False
-
-# Disable Event Broadcasting (Stops the creation of transient celeryev.* queues)
-CELERY_WORKER_SEND_TASK_EVENTS = False
-
-# Ensure tasks use durable queues
-CELERY_TASK_DEFAULT_DELIVERY_MODE = "persistent"
-
-
 
 # Django REST Framework
 REST_FRAMEWORK = {
