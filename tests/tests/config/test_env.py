@@ -21,6 +21,7 @@ def _valid_env():
         "CELERY_BROKER_MANAGEMENT_PORT": "15672",
         "CELERY_TASK_DEFAULT_QUEUE": "celery",
         "EMAIL_VERIFICATION_TOKEN_LIFETIME": "300",
+        "EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL": "600",
     }
 
 
@@ -51,6 +52,7 @@ def test_validate_env_all_valid():
     assert config["CELERY_BROKER_MANAGEMENT_PORT"] == 15672
     assert config["CELERY_TASK_DEFAULT_QUEUE"] == "celery"
     assert config["EMAIL_VERIFICATION_TOKEN_LIFETIME"] == 300
+    assert config["EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL"] == 600
 
 
 # ── SECRET_KEY ──────────────────────────────────────────────────────────

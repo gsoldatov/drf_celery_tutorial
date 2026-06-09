@@ -137,11 +137,21 @@ AUTH_USER_MODEL = "users.User"
 # Email verification token lifetime in seconds
 EMAIL_VERIFICATION_TOKEN_LIFETIME = config["EMAIL_VERIFICATION_TOKEN_LIFETIME"]
 
+# How often to clean up expired email verification tokens (seconds)
+EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL = config["EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL"]
+
 # Celery
 CELERY_BROKER_URL = (
     f"amqp://{config['CELERY_BROKER_HOST']}:{config['CELERY_BROKER_PORT']}//"
 )
 CELERY_TASK_DEFAULT_QUEUE = config["CELERY_TASK_DEFAULT_QUEUE"]
+
+CELERY_BEAT_SCHEDULE = {
+    "cleanup-expired-tokens": {
+        "task": "users.tasks.cleanup_expired_tokens",
+        "schedule": EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL,
+    },
+}
 
 
 # Django REST Framework

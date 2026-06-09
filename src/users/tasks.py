@@ -93,3 +93,10 @@ def send_verification_email(self, verification_token_id: int) -> None:
     # Email has been sent.  A DB failure here must NOT cause a
     # retry (that would double-send), so swallow the error.
     _update_status_safe(verification_token_id, EmailVerificationToken.Status.SENT)
+
+
+@shared_task
+def cleanup_expired_tokens() -> None:
+    EmailVerificationToken.objects.filter(
+        expires_at__lte=timezone.now()
+    ).delete()

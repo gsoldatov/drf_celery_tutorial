@@ -72,11 +72,8 @@
                         + 2 tasks simultaneously receive the same token;
                         + second task starts after first completes;
 
-
-- add admin user & test the full setup manually;
-- add a worker runner script;   // add worker port to config?
-? add admin user to config;
-? add a script / functions for setting up dev environment (running migrations, etc.);
++ Downgrade to RabbitMQ 4.2 to fix transient queue errors;
++ add periodic cleanup of expired tokens;
 - add readme;
 
 
@@ -101,8 +98,6 @@
 
 
 # Additional Ideas for Tutorial
-- Celery Beat for periodic task execution:
-    - delete expired verification tokens;
 - Dead letter queue (failed email sends);
 - Task result tracking with django-celery-results and a task status polling endpoint:
     ? other use cases, which rely on DCR's table (restarting failed tasks, storing idempotency keys, ???);

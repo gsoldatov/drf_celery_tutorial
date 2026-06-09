@@ -70,9 +70,9 @@ def _purge_test_queue():
         Queue(TEST_QUEUE)(conn.channel()).purge()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def celery_test_queue():
-    """Configure Celery to use a dedicated test queue (module-scoped, once per file).
+    """Configure Celery to use a dedicated test queue (session-scoped, once per run).
 
     Overrides CELERY_TASK_DEFAULT_QUEUE at the Django settings level because
     app.conf.update() cannot change task_default_queue after config_from_object()
@@ -101,17 +101,14 @@ def purge_test_queue(celery_test_queue):
         _purge_test_queue()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def celery_worker(celery_test_queue):
     """Start a Celery worker in a background thread, consuming the test queue through
-    RabbitMQ (module-scoped — started once per test file).
+    RabbitMQ (session-scoped — started once per test run).
 
     Uses start_worker with pool='solo' (single-threaded, in-process) instead of
     task_always_eager=True because eager mode bypasses the broker entirely.
     This gives a true end-to-end path: view → broker → worker.
-
-    The worker thread is daemon and may block on a socket read at shutdown;
-    shutdown_timeout=0 skips the join entirely — the process exit kills it.
     """
     from celery.contrib.testing.worker import start_worker
     from api.celery import app
@@ -122,8 +119,10 @@ def celery_worker(celery_test_queue):
             pool="solo",             # single-threaded, in-process — no child workers
             queues=[TEST_QUEUE],     # only consume from the isolated test queue
             perform_ping_check=False,  # skip the startup ping round-trip
-            shutdown_timeout=0,      # don't wait for the daemon thread on teardown
+            shutdown_timeout=1.0,    # give the worker thread time to drain
         ) as worker:
             yield worker
     except RuntimeError:
         pass  # worker thread didn't unblock — daemon, killed with the process
+    finally:
+        app.pool.force_close_all()

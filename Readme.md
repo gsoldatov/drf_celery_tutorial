@@ -35,9 +35,9 @@ python src/manage.py createsuperuser
 # 5. Run development server
 python src/manage.py runserver
 
-# 5.1. Run Celery worker (in a separate terminal)
+# 5.1. Run Celery worker & beat (in a separate terminal)
 cd src
-celery -A api worker --loglevel=info
+celery -A api worker --loglevel=info -B
 # # (for Celery 5.6 & RabbitMQ 4.3+ additional args are required to fix errors caused by using transient non-exclusive queues;
 # # this should also be paired with additional configuration in settings.py and Celery test fixtures;
 # # this is skipped in favor of downgrading to RabbitMQ 4.2)

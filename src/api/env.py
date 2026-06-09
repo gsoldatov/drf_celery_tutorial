@@ -113,4 +113,18 @@ def validate_env(env=None):
             f"got {config['EMAIL_VERIFICATION_TOKEN_LIFETIME']}."
         )
 
+    try:
+        config["EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL"] = env.int(
+            "EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL"
+        )
+    except ValueError:
+        raise ImproperlyConfigured(
+            "EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL must be a valid integer."
+        )
+    if config["EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL"] <= 0:
+        raise ImproperlyConfigured(
+            f"EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL must be a positive integer, "
+            f"got {config['EMAIL_VERIFICATION_TOKEN_CLEANUP_INTERVAL']}."
+        )
+
     return config
