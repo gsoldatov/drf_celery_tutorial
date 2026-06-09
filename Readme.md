@@ -1,18 +1,27 @@
 # Overview
 A tutorial project, which focuses on use cases for Celery tasks within a Django Rest Framework application.
 
-Current plan:
-- [x] scaffold project (DRF + PostgreSQL)
-- [x] add custom user model & endpoints for it (user registration & fetch, email verifiction)
-- [x] set up Celery with RabbitMQ as a broker
-- [x] add a Celery task for "sending" a verification email
-- [ ] add a Celery task for periodic clean up of expired verification tokens
+
+# Key Implemented Features
+- [x] custom user model & endpoints for it (user registration & fetch, email verifiction)
+- [x] Celery task for "sending" a verification email with retries, failure handling and idempotency;
+- [x] Celery Beat task for periodic clean up of expired email verification tokens.
 
 
-# Set up Project and Run Development Server
+# Stack
+- `Python 3.13`;
+- `Docker Compose`;
+- `Django Rest Framework`;
+- `PostgreSQL 17`;
+- `Celery` + `Celery Beat`;
+- `RabbitMQ`;
+- `pytest-django`.
+
+
+# How to Set up Project and Run Development Server
 Prerequisites:
 - Python 3.13
-- Docker and Docker Compose
+- Docker Compose
 
 ```bash
 # 1. Create and edit .env file
@@ -45,7 +54,7 @@ celery -A api worker --loglevel=info -B
 ```
 
 
-# Run Tests
+# How to Run Tests
 Before running tests, steps 1-3 from the previous section must be completed (.env file, project venv, Docker containers).
 
 ```bash
