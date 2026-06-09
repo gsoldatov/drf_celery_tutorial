@@ -58,26 +58,3 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "date_joined",
         ]
         read_only_fields = fields
-
-
-class EmailVerificationSerializer(serializers.Serializer):
-    token = serializers.UUIDField()
-
-    def validate_token(self, value):
-        try:
-            token_obj = EmailVerificationToken.objects.select_related("user").get(
-                token=value
-            )
-        except EmailVerificationToken.DoesNotExist:
-            raise serializers.ValidationError("Invalid token.")
-
-        if token_obj.expires_at < timezone.now() and not token_obj.user.email_verified:
-            raise serializers.ValidationError("Token has expired.")
-
-        self._token_obj = token_obj
-        return value
-
-    def save(self, **kwargs):
-        user = self._token_obj.user
-        user.email_verified = True
-        user.save(update_fields=["email_verified"])

@@ -1,14 +1,11 @@
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import User
-from .serializers import (
-    EmailVerificationSerializer,
-    RegistrationSerializer,
-    UserDetailSerializer,
-)
+from .models import EmailVerificationToken, User
+from .serializers import RegistrationSerializer, UserDetailSerializer
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -27,8 +24,27 @@ class UserDetailView(generics.RetrieveAPIView):
 
 class EmailVerificationView(APIView):
     @transaction.atomic
-    def post(self, request):
-        serializer = EmailVerificationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+    def post(self, request, token):
+        try:
+            token_obj = EmailVerificationToken.objects.select_related("user").get(
+                token=token
+            )
+        except EmailVerificationToken.DoesNotExist:
+            return Response(
+                {"detail": "Invalid or expired token."},
+                status=404,
+            )
+
+        if (
+            token_obj.expires_at < timezone.now()
+            and not token_obj.user.email_verified
+        ):
+            return Response(
+                {"detail": "Invalid or expired token."},
+                status=404,
+            )
+
+        user = token_obj.user
+        user.email_verified = True
+        user.save(update_fields=["email_verified"])
         return Response({"detail": "Email was successfully verified."})
